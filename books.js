@@ -3,7 +3,6 @@ const bodyParser = require('body-parser');
 
 const { MongoClient, ObjectId } = require('mongodb');
 
-
 const PORT = 5000;
 
 const dbName = 'node-books';
@@ -36,11 +35,13 @@ async function main() {
         const book = await collection.find(
             { _id: new ObjectId(req.params.id) }
         ).toArray();
+
         if (book.length > 0) {
             res.status(200).json(book);
         }else {
             res.status(404).send('Book not found');
         }
+    
     }else {
         res.status(404).send('Invalid ObjectID');
     }
@@ -83,12 +84,30 @@ async function main() {
             );
 
             res.status(200).json(newBook);
-            
+
         }else {
             res.status(404).send('Book not found');
         }
     }else {
         res.status(404).send('Invalid ObjectID');
+    }
+  })
+
+  app.delete('/:id', async (req, res) => {
+
+    const book = await collection.find(
+        { _id: new ObjectId(req.params.id) }
+    ).toArray();
+
+    if (book.length > 0) {
+
+        await collection.deleteOne(
+            { _id: new ObjectId(req.params.id) }
+        );
+
+        res.status(200).send(`Book id: ${req.params.id} deleted`);
+    }else {
+        res.status(404).send('Book not found');
     }
   })
 
