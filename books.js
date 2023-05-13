@@ -1,7 +1,8 @@
 const express = require("express");
 const bodyParser = require('body-parser');
 
-const { MongoClient } = require('mongodb');
+const { MongoClient, ObjectId } = require('mongodb');
+
 
 const PORT = 5000;
 
@@ -17,18 +18,35 @@ async function main() {
 
   const collection = db.collection('books');
 
-  const findResult = await collection.find({}).toArray();
-
   const app = express();
 
   app.use(bodyParser.json());
+
+  function validObjectId(id) {
+    return ObjectId.isValid(id) && (typeof id === 'string') && (id.length === 24);
+  }
 
   app.get('/', async (req, res) => {
     const books = await collection.find().toArray();
     res.status(200).send(books);
   })
+  
+  app.get('/:id', async (req, res) => {
+    if (validObjectId(req.params.id)) {
+        const book = await collection.find(
+            { _id: new ObjectId(req.params.id) }
+        ).toArray();
+        if (book.length > 0) {
+            res.status(200).json(book);
+        }else {
+            res.status(404).send('Book not found');
+        }
+    }else {
+        res.status(404).send('Invalid ObjectID');
+    }
+  })
 
-  app.post('/', (req, res) => {
+  app.post('/', async (req, res) => {
     if (req.body.title && req.body.author) {
         const {title, author} = req.body;
         const newBook = {
@@ -36,10 +54,41 @@ async function main() {
             title,
             author,
         }
-        collection.insertOne(newBook);
+        await collection.insertOne(newBook);
         res.status(201).send(newBook);
     }else {
         res.status(404).send('The Title or Author fields are empty.');
+    }
+  })
+
+  app.put('/:id', async (req, res) => {
+    if (validObjectId(req.params.id)) {
+
+        const book = await collection.find(
+            { _id: new ObjectId(req.params.id) }
+        ).toArray();
+
+        if (book.length > 0) {
+
+            const {title, author} = req.body;
+            const newBook = {
+                updated: new Date(),
+                title,
+                author,
+            }
+
+            await collection.updateOne(
+                { _id: new ObjectId(req.params.id) },
+                { $set: newBook }
+            );
+
+            res.status(200).json(newBook);
+            
+        }else {
+            res.status(404).send('Book not found');
+        }
+    }else {
+        res.status(404).send('Invalid ObjectID');
     }
   })
 
