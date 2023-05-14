@@ -95,19 +95,24 @@ async function main() {
 
   app.delete('/:id', async (req, res) => {
 
-    const book = await collection.find(
-        { _id: new ObjectId(req.params.id) }
-    ).toArray();
+    if (validObjectId(req.params.id)) {
 
-    if (book.length > 0) {
-
-        await collection.deleteOne(
+        const book = await collection.find(
             { _id: new ObjectId(req.params.id) }
-        );
-
-        res.status(200).send(`Book id: ${req.params.id} deleted`);
+        ).toArray();
+    
+        if (book.length > 0) {
+    
+            await collection.deleteOne(
+                { _id: new ObjectId(req.params.id) }
+            );
+    
+            res.status(200).send(`Book id: ${req.params.id} deleted`);
+        }else {
+            res.status(404).send('Book not found');
+        }
     }else {
-        res.status(404).send('Book not found');
+        res.status(404).send('Invalid ObjectID');
     }
   })
 
